@@ -1,5 +1,6 @@
 const fetch = require('node-fetch');
-const cheerio = require('cheerio')
+const cheerio = require('cheerio');
+const base64 = require('base-64');
 
 const urls = {
 	fetched: [],
@@ -35,7 +36,12 @@ const convertToAbsolute = (sourceURL, targetURL) => {
 	return targetURL.split('#')[0];
 }
 
-const crawl = (url, match_404, extended_domains) => {
+const crawl = (url, match_404, extended_domains, auth, replaceURL) => {
+	const authHeaders = {};
+	if (auth) {
+		authHeaders.Authorization = `Basic ${base64.encode(`${auth.username}:${auth.password}`)}`;
+	}
+
 	for (let index = 0; index < urls.pending.length; index++) {
 		if (urls.pending[index] === url) {
 			urls.pending.splice(index, 1);
@@ -45,7 +51,9 @@ const crawl = (url, match_404, extended_domains) => {
 	console.log('crawling', url);
 	console.log(urls.pending.length, 'urls remaining');
 	return new Promise((resolve, reject) => {
-		fetch(convertToUrl(url))
+		fetch(convertToUrl(url), {
+			headers: authHeaders,
+		})
 			.then(response => {
 				let found_404 = false;
 
@@ -82,7 +90,7 @@ const crawl = (url, match_404, extended_domains) => {
 
 					urls.fetched.push(url);
 					if (urls.pending.length > 0) {
-						crawl(urls.pending[0], match_404, extended_domains).then(resolve).catch(reject);
+						crawl(urls.pending[0], match_404, extended_domains, auth, replaceURL).then(resolve).catch(reject);
 					} else {
 						console.log(urls.fetched);
 						console.log(urls.fetched.length, 'URLs fetched!')
@@ -94,7 +102,7 @@ const crawl = (url, match_404, extended_domains) => {
 				})
 			})
 			.catch(error => {
-				crawl(url, match_404, extended_domains);
+				crawl(url, match_404, extended_domains, auth, replaceURL);
 				throw error;
 			})
 	})

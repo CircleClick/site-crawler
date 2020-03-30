@@ -15,4 +15,13 @@ if (config.EXTENDED_DOMAINS) {
 }
 extended_domains.push(config.TARGET_DOMAIN);
 
-staticCrawler(config.TARGET_DOMAIN, config.MATCH_404, extended_domains);
+let auth = null;
+
+if (env_variables.parsed.USERNAME) {
+	auth = {
+		username: env_variables.parsed.USERNAME,
+		password: env_variables.parsed.PASSWORD,
+	}
+}
+
+staticCrawler(config.TARGET_DOMAIN, config.MATCH_404, extended_domains, auth, env_variables.parsed.REPLACE_URL ? env_variables.parsed.REPLACE_URL.split(',') : undefined);
